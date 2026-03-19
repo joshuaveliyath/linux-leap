@@ -1,1 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Leap | The Switcher's Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 sm:p-8">
 
+    <div class="max-w-3xl w-full text-center">
+        <div class="mb-4 inline-block px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-bold uppercase tracking-widest">
+            Linux Adoption Tool 2026
+        </div>
+        <h1 class="text-6xl font-black mb-4 tracking-tighter">Linux <span class="text-blue-500">Leap</span></h1>
+        <p class="text-slate-400 text-lg mb-10">Stop guessing. Check your apps and games instantly.</p>
+
+        <div class="glass p-2 rounded-2xl flex flex-col sm:flex-row items-center gap-2 mb-10 transition-all duration-300 focus-within:scale-[1.02]">
+            <input id="search" type="text" placeholder="Type an app (e.g. Photoshop) or Game (e.g. Elden Ring)" 
+                   class="bg-transparent w-full p-4 outline-none text-lg text-white"
+                   onkeypress="if(event.key === 'Enter') checkApp()">
+            <button onclick="checkApp()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 px-10 py-4 rounded-xl font-black text-white transition-all active:scale-95 shadow-lg shadow-blue-500/20">
+                CHECK
+            </button>
+        </div>
+
+        <div id="result" class="hidden text-left space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            </div>
+    </div>
+
+    <script>
+        async function checkApp() {
+            const query = document.getElementById('search').value.trim();
+            const resultDiv = document.getElementById('result');
+            if (!query) return;
+
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `<div class="text-center p-10 bg-slate-800/50 rounded-3xl border border-slate-700">
+                <div class="animate-pulse text-blue-400 font-bold">Scanning Linux Databases...</div>
+            </div>`;
+
+            try {
+                // 1. Search Flathub API for Native Linux Apps
+                const flatResponse = await fetch(`https://flathub.org/api/v1/apps/search/${encodeURIComponent(query)}`);
+                const flatData = await flatResponse.json();
+
+                let html = "";
+
+                // Top Result (Native App)
+                if (flatData.length > 0) {
+                    const top = flatData[0];
+                    html += `
+                    <div class="glass p-6 rounded-3xl border-l-4 border-l-green-500">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="bg-green-500 text-black text-[10px] font-black px-2 py-0.5 rounded">NATIVE FOUND</span>
+                        </div>
+                        <h2 class="text-3xl font-black">${top.name}</h2>
+                        <p class="text-slate-400 mb-4">${top.summary}</p>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="https://flathub.org/apps/${top.flatpakAppId}" target="_blank" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition">View on Flathub</a>
+                            <button onclick="navigator.clipboard.writeText('flatpak install flathub ${top.flatpakAppId}'); alert('Command Copied!')" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-4 py-2 rounded-lg text-sm font-bold border border-blue-500/30">Copy Install Command</button>
+                        </div>
+                    </div>`;
+                }
+
+                // 2. Game Check (Steam/ProtonDB)
+                html += `
+                <div class="glass p-6 rounded-3xl border-l-4 border-l-indigo-500">
+                    <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded">GAMING</span>
+                    <h3 class="text-xl font-bold mt-2">Check Game Compatibility</h3>
+                    <p class="text-slate-400 text-sm mb-4">View Steam Deck and Desktop Linux ratings for "${query}" on ProtonDB.</p>
+                    <a href="https://www.protondb.com/search?q=${encodeURIComponent(query)}" target="_blank" class="inline-block text-indigo-400 font-black hover:translate-x-1 transition-transform">🔍 SEARCH PROTONDB LIVE →</a>
+                </div>`;
+
+                // 3. Fallback (Alternatives)
+                html += `
+                <div class="glass p-6 rounded-3xl border-l-4 border-l-yellow-500">
+                    <span class="bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded">ALTERNATIVES</span>
+                    <h3 class="text-xl font-bold mt-2">Find a Replacement</h3>
+                    <p class="text-slate-400 text-sm mb-4">If the app isn't native, find the best Linux alternative for "${query}".</p>
+                    <a href="https://alternativeto.net/browse/search/?q=${encodeURIComponent(query)}&platform=linux" target="_blank" class="inline-block text-yellow-500 font-black hover:translate-x-1 transition-transform">🚀 VIEW CROWDSOURCED ALTS →</a>
+                </div>`;
+
+                resultDiv.innerHTML = html;
+
+            } catch (e) {
+                resultDiv.innerHTML = `<div class="p-6 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20">Database error. Are you offline?</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
