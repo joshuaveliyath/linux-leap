@@ -46,39 +46,50 @@
             </div>`;
 
             try {
-                // 1. Search Flathub API for Native Linux Apps
-                const flatResponse = await fetch(`https://flathub.org/api/v1/apps/search/${encodeURIComponent(query)}`);
-                const flatData = await flatResponse.json();
+                // NEW STABLE API URL
+                const flatResponse = await fetch(`https://flathub.org/api/v2/app?search=${encodeURIComponent(query)}`);
+                
+                // If Flathub is being finicky, we still want to show the other results
+                let flatData = [];
+                if (flatResponse.ok) {
+                    flatData = await flatResponse.json();
+                }
 
                 let html = "";
 
                 // Top Result (Native App)
-                if (flatData.length > 0) {
+                if (flatData && flatData.length > 0) {
                     const top = flatData[0];
                     html += `
-                    <div class="glass p-6 rounded-3xl border-l-4 border-l-green-500">
+                    <div class="glass p-6 rounded-3xl border-l-4 border-l-green-500 mb-4">
                         <div class="flex items-center gap-3 mb-2">
                             <span class="bg-green-500 text-black text-[10px] font-black px-2 py-0.5 rounded">NATIVE FOUND</span>
                         </div>
                         <h2 class="text-3xl font-black">${top.name}</h2>
-                        <p class="text-slate-400 mb-4">${top.summary}</p>
+                        <p class="text-slate-400 mb-4">${top.summary || 'Native Linux version available.'}</p>
                         <div class="flex flex-wrap gap-2">
                             <a href="https://flathub.org/apps/${top.flatpakAppId}" target="_blank" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition">View on Flathub</a>
                             <button onclick="navigator.clipboard.writeText('flatpak install flathub ${top.flatpakAppId}'); alert('Command Copied!')" class="bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 px-4 py-2 rounded-lg text-sm font-bold border border-blue-500/30">Copy Install Command</button>
                         </div>
                     </div>`;
+                } else {
+                    // Show a message if no native app is found so the screen isn't empty
+                    html += `<div class="glass p-6 rounded-3xl border-l-4 border-l-slate-500 mb-4">
+                        <h3 class="text-xl font-bold">No Direct Native Match</h3>
+                        <p class="text-slate-400 text-sm">No exact match on Flathub. Check alternatives below.</p>
+                    </div>`;
                 }
 
-                // 2. Game Check (Steam/ProtonDB)
+                // 2. Game Check (Steam/ProtonDB) - Always shows
                 html += `
-                <div class="glass p-6 rounded-3xl border-l-4 border-l-indigo-500">
+                <div class="glass p-6 rounded-3xl border-l-4 border-l-indigo-500 mb-4">
                     <span class="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded">GAMING</span>
                     <h3 class="text-xl font-bold mt-2">Check Game Compatibility</h3>
                     <p class="text-slate-400 text-sm mb-4">View Steam Deck and Desktop Linux ratings for "${query}" on ProtonDB.</p>
                     <a href="https://www.protondb.com/search?q=${encodeURIComponent(query)}" target="_blank" class="inline-block text-indigo-400 font-black hover:translate-x-1 transition-transform">🔍 SEARCH PROTONDB LIVE →</a>
                 </div>`;
 
-                // 3. Fallback (Alternatives)
+                // 3. Fallback (Alternatives) - Always shows
                 html += `
                 <div class="glass p-6 rounded-3xl border-l-4 border-l-yellow-500">
                     <span class="bg-yellow-500 text-black text-[10px] font-black px-2 py-0.5 rounded">ALTERNATIVES</span>
@@ -90,7 +101,17 @@
                 resultDiv.innerHTML = html;
 
             } catch (e) {
-                resultDiv.innerHTML = `<div class="p-6 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20">Database error. Are you offline?</div>`;
+                // If the Flathub fetch fails completely, we still show the other two buttons!
+                resultDiv.innerHTML = `
+                <div class="p-4 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 mb-4 text-sm">
+                    Note: Native database (Flathub) is currently unreachable. Showing external links:
+                </div>
+                <div class="glass p-6 rounded-3xl border-l-4 border-l-indigo-500 mb-4">
+                    <a href="https://www.protondb.com/search?q=${encodeURIComponent(query)}" target="_blank" class="text-indigo-400 font-black">🔍 SEARCH PROTONDB FOR "${query.toUpperCase()}"</a>
+                </div>
+                <div class="glass p-6 rounded-3xl border-l-4 border-l-yellow-500">
+                    <a href="https://alternativeto.net/browse/search/?q=${encodeURIComponent(query)}&platform=linux" target="_blank" class="text-yellow-500 font-black">🚀 FIND ALTERNATIVES FOR "${query.toUpperCase()}"</a>
+                </div>`;
             }
         }
     </script>
