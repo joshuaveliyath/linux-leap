@@ -47,7 +47,11 @@
 
             try {
                 // NEW STABLE API URL
-                const flatResponse = await fetch(`https://flathub.org/api/v2/app?search=${encodeURIComponent(query)}`);
+                // This uses a public proxy to bypass the CORS block
+                const proxyUrl = "https://corsproxy.io/?";
+                const targetUrl = `https://flathub.org/api/v2/app?search=${encodeURIComponent(query)}`;
+
+                const flatResponse = await fetch(proxyUrl + targetUrl);
                 
                 // If Flathub is being finicky, we still want to show the other results
                 let flatData = [];
